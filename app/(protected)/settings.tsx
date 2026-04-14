@@ -1,4 +1,5 @@
 import { createApiClient } from "@/lib/api"
+import { PlaceholderPanel } from "@/components/PlaceholderPanel"
 import type { SettingsResponse } from "@/lib/types"
 import { useAuth, useClerk, useUser } from "@clerk/clerk-expo"
 import { type ReactNode, useCallback, useEffect, useState } from "react"
@@ -69,6 +70,7 @@ export default function SettingsScreen() {
   const { user } = useUser()
 
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [savingPharmacy, setSavingPharmacy] = useState(false)
   const [savingExpiry, setSavingExpiry] = useState(false)
 
@@ -87,6 +89,7 @@ export default function SettingsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const api = createApiClient(() => getToken())
       const res: SettingsResponse = await api.getSettings()
@@ -102,7 +105,7 @@ export default function SettingsScreen() {
         criticalDays: String(res.expiry.criticalDays),
       })
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Failed to load settings.")
+      setLoadError(err instanceof Error ? err.message : "Failed to load settings.")
     } finally {
       setLoading(false)
     }
@@ -197,6 +200,16 @@ export default function SettingsScreen() {
             <View style={styles.centered}>
               <ActivityIndicator size="large" color="#4e8cff" />
             </View>
+          ) : loadError ? (
+            <>
+              <PlaceholderPanel title="Unable to load settings" body={loadError} />
+              <Pressable
+                onPress={() => void load()}
+                style={({ pressed }) => [styles.saveBtn, { marginTop: 10 }, pressed && styles.pressed]}
+              >
+                <Text style={styles.saveBtnText}>Retry</Text>
+              </Pressable>
+            </>
           ) : (
             <>
               {/* ── User card ──────────────────────────────────────────────── */}
