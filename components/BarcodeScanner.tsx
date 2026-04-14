@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { Camera, CameraType, PermissionStatus } from "expo-camera"
 import {
   ActivityIndicator,
   Modal,
@@ -17,8 +16,10 @@ type BarcodeScannerProps = {
 }
 
 export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScanFailure }: BarcodeScannerProps) {
-  const [permission, setPermission] = useState<PermissionStatus | null>(null)
+  const [CameraModule, setCameraModule] = useState<typeof import("expo-camera") | null>(null)
+  const [permission, setPermission] = useState<string | null>(null)
   const [scanned, setScanned] = useState(false)
+  const [moduleError, setModuleError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!visible) {
@@ -28,13 +29,27 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
 
     void (async () => {
       try {
-        const result = await Camera.requestCameraPermissionsAsync()
-        setPermission(result.status)
+        if (!CameraModule) {
+          const camera = await import("expo-camera")
+          setCameraModule(camera)
+        }
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error("Camera module failed to load")
+        setModuleError(err.message)
+        onScanFailure(err)
+        return
+      }
+
+      try {
+        if (CameraModule) {
+          const result = await CameraModule.requestCameraPermissionsAsync()
+          setPermission(result.status)
+        }
       } catch (error) {
         onScanFailure(error instanceof Error ? error : new Error("Camera permission error"))
       }
     })()
-  }, [visible, onScanFailure])
+  }, [visible, onScanFailure, CameraModule])
 
   const handleBarCodeScanned = ({ data }: { data: string; type: string }) => {
     if (scanned) return
@@ -47,9 +62,16 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.heading}>Scan barcode</Text>
-          {permission === null ? (
+          {moduleError ? (
+            <View style={styles.permissionCard}>
+              <Text style={styles.permissionText}>{moduleError}</Text>
+              <Pressable onPress={onClose} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+                <Text style={styles.closeButtonText}>Close</Text>
+              </Pressable>
+            </View>
+          ) : permission === null || CameraModule === null ? (
             <ActivityIndicator size="large" color="#4e8cff" style={styles.loader} />
-          ) : permission !== PermissionStatus.GRANTED ? (
+          ) : permission !== CameraModule.PermissionStatus.GRANTED ? (
             <View style={styles.permissionCard}>
               <Text style={styles.permissionText}>Camera access is required to scan barcodes.</Text>
               <Pressable onPress={onClose} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
@@ -57,9 +79,9 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
               </Pressable>
             </View>
           ) : (
-            <Camera
+            <CameraModule.Camera
               style={styles.camera}
-              type={CameraType.back}
+              type={CameraModule.CameraType.back}
               onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
               barCodeScannerSettings={{ barCodeTypes: ["qr", "ean13", "ean8", "code128", "code39", "upc_e", "upc_a"] }}
             >
@@ -69,7 +91,7 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
                   <Text style={styles.closeButtonText}>Cancel</Text>
                 </Pressable>
               </View>
-            </Camera>
+            </CameraModule.Camera>
           )}
         </View>
       </View>
