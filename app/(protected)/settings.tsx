@@ -109,7 +109,7 @@ export default function SettingsScreen() {
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [])
 
   useEffect(() => {
     void load()

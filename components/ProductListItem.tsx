@@ -1,11 +1,12 @@
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import type { Product } from "@/lib/types"
 
 type ProductListItemProps = {
   product: Product
+  onAddBatch?: (productId: string, productName: string) => void
 }
 
-export function ProductListItem({ product }: ProductListItemProps) {
+export function ProductListItem({ product, onAddBatch }: ProductListItemProps) {
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -36,6 +37,13 @@ export function ProductListItem({ product }: ProductListItemProps) {
           <Text style={styles.batchExpiry}>{new Date(batch.expiryDate).toLocaleDateString()}</Text>
         </View>
       ))}
+
+      <Pressable
+        onPress={() => onAddBatch?.(product.id, product.name)}
+        style={({ pressed }) => [styles.addBatchButton, pressed && styles.addBatchButtonPressed]}
+      >
+        <Text style={styles.addBatchButtonText}>+ Add Batch</Text>
+      </Pressable>
     </View>
   )
 }
@@ -154,5 +162,20 @@ const styles = StyleSheet.create({
     color: "#8f9ab2",
     fontSize: 12,
     fontWeight: "600",
+  },
+  addBatchButton: {
+    backgroundColor: "#4e8cff",
+    borderRadius: 12,
+    marginTop: 12,
+    paddingVertical: 10,
+  },
+  addBatchButtonPressed: {
+    opacity: 0.8,
+  },
+  addBatchButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
   },
 })

@@ -92,5 +92,74 @@ export function createApiClient(getToken: GetToken) {
         body: JSON.stringify(payload),
       })
     },
+    sendWhatsAppReceipt(data: {
+      billId: string
+      customerName?: string
+      customerPhone: string
+      totals: {
+        subtotalAmount: number
+        gstAmount: number
+        gstRate: number
+        totalAmount: number
+      }
+      items: { name: string; quantity: number; price: number }[]
+    }) {
+      return apiFetch<any>("/api/billing/whatsapp", getToken, {
+        method: "POST",
+        body: JSON.stringify(data),
+      })
+    },
+    sendEmailReceipt(data: {
+      billId: string
+      customerName?: string
+      customerEmail: string
+      totals: {
+        subtotalAmount: number
+        gstAmount: number
+        gstRate: number
+        totalAmount: number
+      }
+      items: { name: string; quantity: number; price: number }[]
+    }) {
+      return apiFetch<any>("/api/billing/email", getToken, {
+        method: "POST",
+        body: JSON.stringify(data),
+      })
+    },
+    getBillPdfUrl(billId: string, token: string): string {
+      return `${API_BASE_URL}/api/bill/${billId}/pdf?token=${token}`
+    },
+    createProduct(data: {
+      name: string
+      barcode: string
+      category?: string
+      description?: string
+      lowStockThreshold?: number
+      initialBatch: {
+        batchNumber: string
+        quantity: number
+        costPrice: number
+        sellingPrice: number
+        expiryDate: string
+      }
+    }) {
+      return apiFetch<any>("/api/products", getToken, {
+        method: "POST",
+        body: JSON.stringify(data),
+      })
+    },
+    addBatch(productId: string, data: {
+      batchNumber: string
+      barcode?: string
+      quantity: number
+      costPrice: number
+      sellingPrice: number
+      expiryDate: string
+    }) {
+      return apiFetch<any>(`/api/products/${productId}/batches`, getToken, {
+        method: "POST",
+        body: JSON.stringify(data),
+      })
+    },
   }
 }

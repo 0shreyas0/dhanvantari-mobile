@@ -6,7 +6,10 @@ import { useAuth } from "@clerk/clerk-expo"
 import { useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Linking,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -35,7 +38,7 @@ function MetricCard({
   )
 }
 
-function BillRow({ bill }: { bill: Bill }) {
+function BillRow({ bill, onDownload }: { bill: Bill; onDownload: (bill: Bill) => void }) {
   const date = new Date(bill.createdAt)
   const dateStr = date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
   const timeStr = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })
@@ -62,6 +65,12 @@ function BillRow({ bill }: { bill: Bill }) {
           {bill.itemsText}
         </Text>
       ) : null}
+      <Pressable
+        onPress={() => onDownload(bill)}
+        style={({ pressed }) => [styles.downloadButton, pressed && styles.downloadButtonPressed]}
+      >
+        <Text style={styles.downloadButtonText}>📥 Download PDF</Text>
+      </Pressable>
     </View>
   )
 }
@@ -89,7 +98,7 @@ export default function FinanceScreen() {
         else setRefreshing(false)
       }
     },
-    [getToken]
+    []
   )
 
   useEffect(() => {

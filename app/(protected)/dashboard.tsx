@@ -38,7 +38,7 @@ export default function DashboardScreen() {
     return () => {
       isMounted = false
     }
-  }, [getToken])
+  }, [])
 
   return (
     <AppShell

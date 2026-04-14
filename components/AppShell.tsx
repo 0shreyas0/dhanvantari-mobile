@@ -6,15 +6,21 @@ type AppShellProps = {
   title: string
   subtitle: string
   children: ReactNode
+  headerRight?: ReactNode
 }
 
-export function AppShell({ title, subtitle, children }: AppShellProps) {
+export function AppShell({ title, subtitle, children, headerRight }: AppShellProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.subtitle}>{subtitle}</Text>
+            </View>
+            {headerRight && <View style={styles.headerRightContainer}>{headerRight}</View>}
+          </View>
         </View>
         <View style={styles.content}>{children}</View>
       </View>
@@ -35,6 +41,18 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
+  },
+  headerRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRightContainer: {
+    paddingLeft: 12,
+    justifyContent: "center",
   },
   title: {
     color: "#f8fbff",

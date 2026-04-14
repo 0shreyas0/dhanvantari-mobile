@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +17,7 @@ import {
   View,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
+import BarcodeScanner from "@/components/BarcodeScanner"
 
 // ── Small sub-components ─────────────────────────────────────────────────────
 
@@ -119,15 +121,24 @@ export default function BillingScreen() {
   const [query, setQuery] = useState("")
   const [searchResults, setSearchResults] = useState<BillingSearchProduct[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [scannerVisible, setScannerVisible] = useState(false)
 
   const [cart, setCart] = useState<BillingCartItem[]>([])
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
+  const [customerEmail, setCustomerEmail] = useState("")
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [successModal, setSuccessModal] = useState(false)
+  const [lastPdfUrl, setLastPdfUrl] = useState<string | null>(null)
   const [lastBillId, setLastBillId] = useState<string | null>(null)
   const [lastTotal, setLastTotal] = useState(0)
+  const [lastBillItems, setLastBillItems] = useState<BillingCartItem[]>([])
+  const [lastCustomerName, setLastCustomerName] = useState("")
+  const [lastCustomerPhone, setLastCustomerPhone] = useState("")
+  const [lastCustomerEmail, setLastCustomerEmail] = useState("")
+  const [isSendingWa, setIsSendingWa] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
 
   // Critical-expiry confirmation
   const [pendingProduct, setPendingProduct] = useState<BillingSearchProduct | null>(null)
@@ -161,6 +172,112 @@ export default function BillingScreen() {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [query, doSearch])
+
+  const handleScanSuccess = async (decodedText: string) => {
+    setScannerVisible(false)
+    const trimmed = decodedText.trim()
+    if (!trimmed) return
+    setQuery(trimmed)
+    await doSearch(trimmed)
+  }
+
+  const handleSendWhatsApp = async () => {
+    if (!lastBillId) {
+      Alert.alert("Error", "No bill available to send.")
+      return
+    }
+
+    const phone = lastCustomerPhone.trim()
+    if (!phone) {
+      Alert.alert("WhatsApp number required", "Enter the customer phone number to send the receipt.")
+      return
+    }
+
+    if (lastBillItems.length === 0) {
+      Alert.alert("Error", "No bill items available to send.")
+      return
+    }
+
+    setIsSendingWa(true)
+    try {
+      const api = createApiClient(() => getToken())
+      const result = await api.sendWhatsAppReceipt({
+        billId: lastBillId,
+        customerName: lastCustomerName || "Customer",
+        customerPhone: phone,
+        totals: {
+          subtotalAmount: lastTotal,
+          gstAmount: 0,
+          gstRate: 0,
+          totalAmount: lastTotal,
+        },
+        items: lastBillItems.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      })
+
+      if (result.success) {
+        Alert.alert("WhatsApp sent", "Receipt was sent successfully.")
+      } else {
+        Alert.alert("WhatsApp failed", result.error || "Could not send WhatsApp receipt.")
+      }
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Could not send WhatsApp receipt.")
+    } finally {
+      setIsSendingWa(false)
+    }
+  }
+
+  const handleSendEmail = async () => {
+    if (!lastBillId) {
+      Alert.alert("Error", "No bill available to send.")
+      return
+    }
+
+    const email = lastCustomerEmail.trim()
+    if (!email) {
+      Alert.alert("Email required", "Enter the customer email address to send the receipt.")
+      return
+    }
+
+    if (lastBillItems.length === 0) {
+      Alert.alert("Error", "No bill items available to send.")
+      return
+    }
+
+    setIsSendingEmail(true)
+    try {
+      const api = createApiClient(() => getToken())
+      const result = await api.sendEmailReceipt({
+        billId: lastBillId,
+        customerName: lastCustomerName || "Customer",
+        customerEmail: email,
+        totals: {
+          subtotalAmount: lastTotal,
+          gstAmount: 0,
+          gstRate: 0,
+          totalAmount: lastTotal,
+        },
+        items: lastBillItems.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      })
+
+      if (result.success) {
+        Alert.alert("Email sent", "Receipt was sent successfully.")
+      } else {
+        Alert.alert("Email failed", result.error || "Could not send email receipt.")
+      }
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Could not send email receipt.")
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
 
   const addToCart = (product: BillingSearchProduct, confirmed = false) => {
     if (product.isExpired) {
@@ -215,6 +332,19 @@ export default function BillingScreen() {
 
   const subtotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0)
 
+  const handleDownloadPdf = async () => {
+    if (!lastPdfUrl) {
+      Alert.alert("Error", "PDF link not available")
+      return
+    }
+
+    try {
+      await Linking.openURL(lastPdfUrl)
+    } catch (err) {
+      Alert.alert("Error", "Could not open PDF download link")
+    }
+  }
+
   const handleProcessBill = async () => {
     if (cart.length === 0) return
     setIsProcessing(true)
@@ -229,11 +359,17 @@ export default function BillingScreen() {
       })
       if (result.success && result.billId) {
         setLastBillId(result.billId)
+        setLastPdfUrl(result.pdfUrl ?? null)
         setLastTotal(subtotal)
+        setLastBillItems(cart)
+        setLastCustomerName(customerName)
+        setLastCustomerPhone(customerPhone)
+        setLastCustomerEmail(customerEmail)
         setSuccessModal(true)
         setCart([])
         setCustomerName("")
         setCustomerPhone("")
+        setCustomerEmail("")
         setQuery("")
         setSearchResults([])
       } else {
@@ -288,6 +424,9 @@ export default function BillingScreen() {
                   <Text style={styles.searchClear}>✕</Text>
                 </Pressable>
               )}
+              <Pressable onPress={() => setScannerVisible(true)} hitSlop={8} style={styles.scanButton}>
+                <Text style={styles.scanButtonText}>📷</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -353,6 +492,15 @@ export default function BillingScreen() {
                   placeholder="Phone number"
                   placeholderTextColor="#3d4f6b"
                   keyboardType="phone-pad"
+                  style={[styles.customerInput, { marginBottom: 10 }]}
+                />
+                <TextInput
+                  value={customerEmail}
+                  onChangeText={setCustomerEmail}
+                  placeholder="Email address"
+                  placeholderTextColor="#3d4f6b"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
                   style={styles.customerInput}
                 />
               </View>
@@ -428,6 +576,13 @@ export default function BillingScreen() {
         </View>
       </Modal>
 
+      <BarcodeScanner
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScanSuccess={handleScanSuccess}
+        onScanFailure={(error) => Alert.alert("Scanner error", error.message)}
+      />
+
       {/* ── Success modal ────────────────────────────────────────────── */}
       <Modal
         visible={successModal}
@@ -458,12 +613,50 @@ export default function BillingScreen() {
               </View>
             </View>
 
-            <Pressable
-              onPress={() => setSuccessModal(false)}
-              style={({ pressed }) => [styles.processBtn, pressed && styles.pressed]}
-            >
-              <Text style={styles.processBtnText}>Done</Text>
-            </Pressable>
+            <View style={styles.successActions}>
+              <Pressable
+                onPress={handleDownloadPdf}
+                disabled={!lastPdfUrl}
+                style={({ pressed }) => [
+                  styles.actionBtn,
+                  styles.downloadBtn,
+                  !lastPdfUrl && styles.actionBtnDisabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.downloadBtnText}>📥 Download PDF</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSendWhatsApp}
+                disabled={isSendingWa || !lastCustomerPhone.trim()}
+                style={({ pressed }) => [
+                  styles.actionBtn,
+                  styles.sendBtn,
+                  (isSendingWa || !lastCustomerPhone.trim()) && styles.actionBtnDisabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.sendBtnText}>{isSendingWa ? "Sending WhatsApp…" : "Send WhatsApp"}</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSendEmail}
+                disabled={isSendingEmail || !lastCustomerEmail.trim()}
+                style={({ pressed }) => [
+                  styles.actionBtn,
+                  styles.sendBtn,
+                  (isSendingEmail || !lastCustomerEmail.trim()) && styles.actionBtnDisabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.sendBtnText}>{isSendingEmail ? "Sending Email…" : "Send Email"}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setSuccessModal(false)}
+                style={({ pressed }) => [styles.actionBtn, styles.doneBtn, pressed && styles.pressed]}
+              >
+                <Text style={styles.doneBtnText}>Done</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -717,4 +910,17 @@ const styles = StyleSheet.create({
   successKey: { color: "#8f9ab2", fontSize: 13 },
   successVal: { color: "#f8fbff", fontSize: 13, fontWeight: "700" },
   successTotal: { color: "#4e8cff", fontSize: 16 },
+
+  // Success actions
+  successActions: { flexDirection: "column", gap: 10 },
+  actionBtn: { alignItems: "center", borderRadius: 12, height: 48, justifyContent: "center" },
+  actionBtnDisabled: { opacity: 0.5 },
+  downloadBtn: { backgroundColor: "#4e8cff" },
+  downloadBtnText: { color: "#ffffff", fontSize: 15, fontWeight: "700" },
+  sendBtn: { backgroundColor: "#0f172a", borderColor: "#17233b", borderWidth: 1 },
+  sendBtnText: { color: "#8f9ab2", fontSize: 15, fontWeight: "700" },
+  doneBtn: { backgroundColor: "#0b1731", borderColor: "#17233b", borderWidth: 1 },
+  doneBtnText: { color: "#8f9ab2", fontSize: 15, fontWeight: "700" },
+  scanButton: { backgroundColor: "#0b1731", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginLeft: 8 },
+  scanButtonText: { color: "#4e8cff", fontWeight: "700", fontSize: 14 },
 })
