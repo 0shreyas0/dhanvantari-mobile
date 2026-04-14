@@ -1,0 +1,30 @@
+{
+  "name": "dhanvantari-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clerk/clerk-expo": "^2.19.4",
+    "expo": "~55.0.15",
+    "expo-linking": "~8.0.0",
+    "expo-router": "~6.0.12",
+    "expo-secure-store": "~15.0.7",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-native": "0.85.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.24.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.3"
+  }
+}

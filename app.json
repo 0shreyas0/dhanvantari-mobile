@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Dhanvantari",
+    "slug": "dhanvantari-mobile",
+    "scheme": "dhanvantari",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
+  }
+}
