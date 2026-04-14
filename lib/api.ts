@@ -1,4 +1,7 @@
 import type {
+  BillingProcessPayload,
+  BillingProcessResult,
+  BillingSearchProduct,
   DashboardResponse,
   FinanceResponse,
   ProductsResponse,
@@ -55,6 +58,39 @@ export function createApiClient(getToken: GetToken) {
     },
     getSettings() {
       return apiFetch<SettingsResponse>("/api/settings", getToken)
+    },
+    updatePharmacySettings(pharmacy: {
+      name: string
+      phone?: string
+      address?: string
+      logoUrl?: string
+    }) {
+      return apiFetch<SettingsResponse>("/api/settings", getToken, {
+        method: "PATCH",
+        body: JSON.stringify({ pharmacy }),
+      })
+    },
+    updateExpirySettings(expiry: {
+      earlyWarningDays: number
+      urgentWarningDays: number
+      criticalDays: number
+    }) {
+      return apiFetch<SettingsResponse>("/api/settings", getToken, {
+        method: "PATCH",
+        body: JSON.stringify({ expiry }),
+      })
+    },
+    searchBillingProducts(query: string) {
+      return apiFetch<BillingSearchProduct[]>(
+        `/api/billing/search?q=${encodeURIComponent(query)}`,
+        getToken
+      )
+    },
+    processBill(payload: BillingProcessPayload) {
+      return apiFetch<BillingProcessResult>("/api/billing/process", getToken, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      })
     },
   }
 }

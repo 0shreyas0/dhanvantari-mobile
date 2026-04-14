@@ -16,20 +16,20 @@ export function PlaceholderPanel({ title, body }: PlaceholderPanelProps) {
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: "#ffffff",
-    borderColor: "#ddd7cb",
-    borderRadius: 18,
+    backgroundColor: "#061024",
+    borderColor: "#1a2740",
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
   },
   title: {
-    color: "#1d2a22",
+    color: "#f8fbff",
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 8,
   },
   body: {
-    color: "#5d655f",
+    color: "#8f9ab2",
     fontSize: 15,
     lineHeight: 22,
   },

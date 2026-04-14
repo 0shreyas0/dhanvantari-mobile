@@ -108,3 +108,34 @@ export type SettingsResponse = {
   }
   expiry: ExpirySettings
 }
+
+// ── Billing / POS ────────────────────────────────────────────────────────────
+
+export type BillingSearchProduct = {
+  id: string
+  name: string
+  barcodes: string
+  stock: number
+  price: number
+  isExpired: boolean
+  isExpiringSoon: boolean
+  expiryDate: string | null
+  daysToExpiry: number | null
+}
+
+export type BillingCartItem = BillingSearchProduct & {
+  quantity: number
+  isNearExpiry: boolean
+}
+
+export type BillingProcessPayload = {
+  items: { medicineId: string; quantity: number; price: number }[]
+  customer?: { name?: string; phone?: string }
+}
+
+export type BillingProcessResult = {
+  success: boolean
+  billId?: string
+  pdfUrl?: string
+  error?: string
+}

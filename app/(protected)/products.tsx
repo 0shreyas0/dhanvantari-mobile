@@ -49,7 +49,7 @@ export default function ProductsScreen() {
     <AppShell title="Products" subtitle="Manage your inventory.">
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2f5d44" />
+          <ActivityIndicator size="large" color="#4e8cff" />
         </View>
       ) : error ? (
         <PlaceholderPanel title="Unable to load products" body={error} />
@@ -63,21 +63,21 @@ export default function ProductsScreen() {
               onRefresh={() => {
                 void loadProducts("refresh")
               }}
+              tintColor="#4e8cff"
             />
           }
           ListHeaderComponent={
             <View style={styles.headerCard}>
               <Text style={styles.headerTitle}>{data.pharmacyName}</Text>
               <Text style={styles.headerMeta}>
-                {data.products.length} products | early {data.expirySettings.earlyWarningDays}d |
-                {" "}urgent {data.expirySettings.urgentWarningDays}d | critical {data.expirySettings.criticalDays}d
+                {data.products.length} products · early {data.expirySettings.earlyWarningDays}d · urgent {data.expirySettings.urgentWarningDays}d · critical {data.expirySettings.criticalDays}d
               </Text>
             </View>
           }
           ListEmptyComponent={
             <PlaceholderPanel
               title="No products found"
-              body="The mobile client is connected correctly, but this account does not have inventory yet."
+              body="This account does not have inventory yet."
             />
           }
           renderItem={({ item }) => <ProductListItem product={item} />}
@@ -95,20 +95,20 @@ const styles = StyleSheet.create({
     minHeight: 220,
   },
   headerCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#ddd7cb",
-    borderRadius: 18,
+    backgroundColor: "#061024",
+    borderColor: "#1a2740",
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 14,
     padding: 16,
   },
   headerTitle: {
-    color: "#1d2a22",
+    color: "#f8fbff",
     fontSize: 18,
     fontWeight: "700",
   },
   headerMeta: {
-    color: "#5d655f",
+    color: "#8f9ab2",
     fontSize: 14,
     lineHeight: 21,
     marginTop: 8,

@@ -17,15 +17,15 @@ export function InfoCard({ title, children }: InfoCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#ddd7cb",
-    borderRadius: 18,
+    backgroundColor: "#061024",
+    borderColor: "#1a2740",
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 14,
     padding: 16,
   },
   title: {
-    color: "#1d2a22",
+    color: "#f8fbff",
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
