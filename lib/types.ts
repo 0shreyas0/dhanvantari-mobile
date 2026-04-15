@@ -109,6 +109,10 @@ export type SettingsResponse = {
   expiry: ExpirySettings
 }
 
+export type UploadLogoResponse = {
+  logoUrl: string
+}
+
 // ── Billing / POS ────────────────────────────────────────────────────────────
 
 export type BillingSearchProduct = {

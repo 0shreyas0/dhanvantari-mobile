@@ -6,6 +6,7 @@ import { type ReactNode, useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,6 +16,7 @@ import {
   TextInput,
   View,
 } from "react-native"
+import * as ImagePicker from "expo-image-picker"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 type PharmacyForm = { name: string; phone: string; address: string; logoUrl: string }
@@ -73,6 +75,8 @@ export default function SettingsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [savingPharmacy, setSavingPharmacy] = useState(false)
   const [savingExpiry, setSavingExpiry] = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null)
 
   const [pharma, setPharma] = useState<PharmacyForm>({
     name: "",
@@ -130,6 +134,51 @@ export default function SettingsScreen() {
       Alert.alert("Error", err instanceof Error ? err.message : "Failed to save pharmacy settings.")
     } finally {
       setSavingPharmacy(false)
+    }
+  }
+
+  const handlePickLogo = async () => {
+    setLogoUploadError(null)
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (permission.status !== "granted") {
+      Alert.alert("Permission required", "Please allow photo library access to upload a logo.")
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    })
+
+    if (result.canceled || result.assets.length === 0) {
+      return
+    }
+
+    const asset = result.assets[0]
+    if (!asset.uri) {
+      setLogoUploadError("Unable to read selected image.")
+      return
+    }
+
+    const uriParts = asset.uri.split("?")[0].split(".")
+    const extension = uriParts[uriParts.length - 1] || "jpg"
+    const fileName = asset.fileName ?? `logo-${Date.now()}.${extension}`
+    const fileType = asset.type && asset.type.includes("/") ? asset.type : `image/${extension}`
+
+    setLogoUploading(true)
+    try {
+      const api = createApiClient(() => getToken())
+      const response = await api.uploadLogo({ uri: asset.uri, name: fileName, type: fileType })
+      setPharma((p) => ({ ...p, logoUrl: response.logoUrl }))
+      Alert.alert("Uploaded", "Logo uploaded successfully.")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to upload logo."
+      setLogoUploadError(message)
+      Alert.alert("Upload failed", message)
+    } finally {
+      setLogoUploading(false)
     }
   }
 
@@ -251,14 +300,51 @@ export default function SettingsScreen() {
                   onChangeText={(v) => setPharma((p) => ({ ...p, address: v }))}
                   placeholder="e.g. Andheri East, Mumbai"
                 />
-                <Field
-                  label="Logo URL"
-                  hint="Provide a link to your pharmacy logo."
-                  value={pharma.logoUrl}
-                  onChangeText={(v) => setPharma((p) => ({ ...p, logoUrl: v }))}
-                  placeholder="https://example.com/logo.png"
-                  keyboardType="email-address"
-                />
+                {pharma.logoUrl ? (
+                  <View style={styles.logoPreviewContainer}>
+                    <Image
+                      source={{ uri: pharma.logoUrl }}
+                      style={styles.logoPreview}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.fieldHint}>Current branding preview</Text>
+                  </View>
+                ) : null}
+                
+                <Pressable
+                  onPress={handlePickLogo}
+                  disabled={logoUploading}
+                  style={({ pressed }) => [
+                    styles.saveBtn,
+                    { backgroundColor: "#1e293b" },
+                    pressed && styles.pressed
+                  ]}
+                >
+                  {logoUploading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.saveBtnText}>
+                      {pharma.logoUrl ? "Change Pharmacy Logo" : "Upload Pharmacy Logo"}
+                    </Text>
+                  )}
+                </Pressable>
+
+                {pharma.logoUrl ? (
+                  <Pressable
+                    onPress={() => setPharma(p => ({ ...p, logoUrl: "" }))}
+                    style={({ pressed }) => [
+                      styles.removeBtn,
+                      pressed && styles.pressed
+                    ]}
+                  >
+                    <Text style={styles.removeBtnText}>Remove Logo</Text>
+                  </Pressable>
+                ) : null}
+
+                {logoUploadError ? <Text style={styles.fieldError}>{logoUploadError}</Text> : null}
+                
+                <View style={{ height: 12 }} />
+
                 <Pressable
                   onPress={handleSavePharmacy}
                   disabled={savingPharmacy}
@@ -267,7 +353,7 @@ export default function SettingsScreen() {
                   {savingPharmacy ? (
                     <ActivityIndicator color="#ffffff" />
                   ) : (
-                    <Text style={styles.saveBtnText}>Save Pharmacy Settings</Text>
+                    <Text style={styles.saveBtnText}>Save Settings</Text>
                   )}
                 </Pressable>
               </SectionCard>
@@ -501,5 +587,27 @@ const styles = StyleSheet.create({
     color: "#ef5b8c",
     fontSize: 15,
     fontWeight: "700",
+  },
+  logoPreviewContainer: {
+    marginBottom: 14,
+    alignItems: "center",
+  },
+  logoPreview: {
+    width: "100%",
+    height: 140,
+    borderRadius: 14,
+    backgroundColor: "#0b1731",
+    marginBottom: 10,
+  },
+  removeBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  removeBtnText: {
+    color: "#ef5b8c",
+    fontSize: 14,
+    fontWeight: "600",
   },
 })

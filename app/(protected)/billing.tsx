@@ -181,6 +181,10 @@ export default function BillingScreen() {
     await doSearch(trimmed)
   }
 
+  const handleScanFailure = useCallback((error: Error) => {
+    Alert.alert("Scanner error", error.message)
+  }, [])
+
   const handleSendWhatsApp = async () => {
     if (!lastBillId) {
       Alert.alert("Error", "No bill available to send.")
@@ -580,7 +584,7 @@ export default function BillingScreen() {
         visible={scannerVisible}
         onClose={() => setScannerVisible(false)}
         onScanSuccess={handleScanSuccess}
-        onScanFailure={(error) => Alert.alert("Scanner error", error.message)}
+        onScanFailure={handleScanFailure}
       />
 
       {/* ── Success modal ────────────────────────────────────────────── */}

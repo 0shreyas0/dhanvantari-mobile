@@ -6,6 +6,7 @@ import type {
   FinanceResponse,
   ProductsResponse,
   SettingsResponse,
+  UploadLogoResponse,
 } from "@/lib/types"
 
 type GetToken = () => Promise<string | null>
@@ -31,6 +32,44 @@ async function apiFetch<T>(path: string, getToken: GetToken, init?: RequestInit)
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
+  })
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    const message =
+      payload && typeof payload === "object" && "error" in payload
+        ? String(payload.error)
+        : `Request failed with status ${response.status}`
+    throw new Error(message)
+  }
+
+  return response.json() as Promise<T>
+}
+
+async function createFormDataRequest<T>(
+  path: string,
+  getToken: GetToken,
+  file: { uri: string; name: string; type: string }
+): Promise<T> {
+  const token = await getToken()
+  if (!token) {
+    throw new Error("No active Clerk session token found")
+  }
+
+  const formData = new FormData()
+  formData.append("logo", {
+    uri: file.uri,
+    name: file.name,
+    type: file.type,
+  } as any)
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
   })
 
   if (!response.ok) {
@@ -79,6 +118,9 @@ export function createApiClient(getToken: GetToken) {
         method: "PATCH",
         body: JSON.stringify({ expiry }),
       })
+    },
+    uploadLogo(file: { uri: string; name: string; type: string }) {
+      return createFormDataRequest<UploadLogoResponse>("/api/settings/logo", getToken, file)
     },
     searchBillingProducts(query: string) {
       return apiFetch<BillingSearchProduct[]>(
