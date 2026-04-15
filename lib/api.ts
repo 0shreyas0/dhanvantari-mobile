@@ -11,10 +11,20 @@ import type {
 
 type GetToken = () => Promise<string | null>
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim()
+const isEasBuild = process.env.EAS_BUILD === "1" || process.env.EAS_BUILD === "true"
+const isProductionBuild = process.env.NODE_ENV === "production" || isEasBuild
 
 if (!API_BASE_URL) {
-  throw new Error("Missing EXPO_PUBLIC_API_BASE_URL in mobile/.env")
+  throw new Error(
+    "Missing EXPO_PUBLIC_API_BASE_URL. Set it locally in mobile/.env for development, or provide it as an EAS secret for production builds."
+  )
+}
+
+if (isProductionBuild && /(localhost|127\.0\.0\.1)/.test(API_BASE_URL)) {
+  throw new Error(
+    "EAS/production builds cannot use a localhost API URL. Set EXPO_PUBLIC_API_BASE_URL to your deployed web server URL."
+  )
 }
 
 async function apiFetch<T>(path: string, getToken: GetToken, init?: RequestInit): Promise<T> {
