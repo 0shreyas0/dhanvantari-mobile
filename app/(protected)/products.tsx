@@ -104,7 +104,13 @@ export default function ProductsScreen() {
               body="This account does not have inventory yet."
             />
           }
-          renderItem={({ item }) => <ProductListItem product={item} onAddBatch={handleAddBatch} />}
+          renderItem={({ item }) => (
+            <ProductListItem
+              product={item}
+              expirySettings={data.expirySettings}
+              onAddBatch={handleAddBatch}
+            />
+          )}
           showsVerticalScrollIndicator={false}
         />
       ) : null}

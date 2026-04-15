@@ -29,7 +29,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/splash.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.shreyas.dhanvantari"
     },
     "plugins": [
       "expo-router",

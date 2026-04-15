@@ -1,12 +1,19 @@
 import { Pressable, StyleSheet, Text, View } from "react-native"
+import { ExpiryBadge } from "@/components/ExpiryBadge"
+import { DEFAULT_EXPIRY_SETTINGS, type ExpirySettings } from "@/lib/expiry"
 import type { Product } from "@/lib/types"
 
 type ProductListItemProps = {
   product: Product
+  expirySettings?: ExpirySettings
   onAddBatch?: (productId: string, productName: string) => void
 }
 
-export function ProductListItem({ product, onAddBatch }: ProductListItemProps) {
+export function ProductListItem({
+  product,
+  expirySettings = DEFAULT_EXPIRY_SETTINGS,
+  onAddBatch,
+}: ProductListItemProps) {
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -34,7 +41,7 @@ export function ProductListItem({ product, onAddBatch }: ProductListItemProps) {
               Qty {batch.quantity} · {batch.barcode}
             </Text>
           </View>
-          <Text style={styles.batchExpiry}>{new Date(batch.expiryDate).toLocaleDateString()}</Text>
+          <ExpiryBadge expiryDate={batch.expiryDate} settings={expirySettings} />
         </View>
       ))}
 
@@ -157,11 +164,6 @@ const styles = StyleSheet.create({
     color: "#8f9ab2",
     fontSize: 12,
     marginTop: 4,
-  },
-  batchExpiry: {
-    color: "#8f9ab2",
-    fontSize: 12,
-    fontWeight: "600",
   },
   addBatchButton: {
     backgroundColor: "#4e8cff",
