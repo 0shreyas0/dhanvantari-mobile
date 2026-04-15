@@ -1,4 +1,4 @@
-import * as Camera from "expo-camera"
+import { CameraView, useCameraPermissions } from "expo-camera"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
@@ -17,26 +17,19 @@ type BarcodeScannerProps = {
 }
 
 export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScanFailure }: BarcodeScannerProps) {
-  const [permission, setPermission] = useState<string | null>(null)
+  const [permission, requestPermission] = useCameraPermissions()
   const [scanned, setScanned] = useState(false)
 
   useEffect(() => {
+    if (visible && (!permission || permission.status !== "granted")) {
+      requestPermission().catch(onScanFailure)
+    }
     if (!visible) {
       setScanned(false)
-      return
     }
+  }, [visible, permission, requestPermission, onScanFailure])
 
-    void (async () => {
-      try {
-        const result = await Camera.requestCameraPermissionsAsync()
-        setPermission(result.status)
-      } catch (error) {
-        onScanFailure(error instanceof Error ? error : new Error("Camera permission error"))
-      }
-    })()
-  }, [visible, onScanFailure])
-
-  const handleBarCodeScanned = ({ data }: { data: string; type: string }) => {
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
     if (scanned) return
     setScanned(true)
     onScanSuccess(data)
@@ -47,9 +40,10 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.heading}>Scan barcode</Text>
-          {permission === null ? (
+          
+          {!permission ? (
             <ActivityIndicator size="large" color="#4e8cff" style={styles.loader} />
-          ) : permission !== "granted" ? (
+          ) : !permission.granted ? (
             <View style={styles.permissionCard}>
               <Text style={styles.permissionText}>Camera access is required to scan barcodes.</Text>
               <Pressable onPress={onClose} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
@@ -57,11 +51,13 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
               </Pressable>
             </View>
           ) : (
-            <Camera.Camera
+            <CameraView
               style={styles.camera}
-              type={Camera.CameraType.back}
-              onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-              barCodeScannerSettings={{ barCodeTypes: ["qr", "ean13", "ean8", "code128", "code39", "upc_e", "upc_a"] }}
+              facing="back"
+              onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+              barcodeScannerSettings={{
+                barcodeTypes: ["qr", "ean13", "ean8", "code128", "code39", "upc_e", "upc_a"],
+              }}
             >
               <View style={styles.cameraOverlay}>
                 <Text style={styles.cameraHint}>Point the camera at a barcode</Text>
@@ -69,7 +65,7 @@ export default function BarcodeScanner({ visible, onClose, onScanSuccess, onScan
                   <Text style={styles.closeButtonText}>Cancel</Text>
                 </Pressable>
               </View>
-            </Camera.Camera>
+            </CameraView>
           )}
         </View>
       </View>
